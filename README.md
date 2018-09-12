@@ -67,4 +67,4 @@ E=0.025; %nugget of depth variogram
 
 ```
 
-![Temp distrubution](/Users/Marcel/Google Drive/Data/SOCCO_gliders/Optimal-Interpolation/temp_distribution.png)
+![Temp distrubution](https://github.com/marcelduplessis/Optimal-Interpolation-Glider-Data/blob/master/temp_distribution.png)
