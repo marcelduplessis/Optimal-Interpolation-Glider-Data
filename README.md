@@ -27,6 +27,8 @@ d = {'temp' : dat.temperature.data.temperature.values,
 sio.savemat('/Users/Marcel/Google Drive/Data/SOCCO_gliders/optimal_interpolated_grids/soscex1_temp.mat', d)
 ```
 
+## Reading the data into MATLAB and performing the optimal interpolation
+---
 
 Now once the data is saved in a .mat format, I switch from Python to MATLAB (long-winded I know, but it works for me so I'm going with it). Once in MATLAB, you need to add the paths for the objmap and variogram and load in the saved .mat file.
 
