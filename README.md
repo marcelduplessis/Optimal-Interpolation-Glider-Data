@@ -4,7 +4,7 @@ Here I will describe how I use the optimal interpolation method obtained from th
 
 This is a little long winded for most people as I use Python as a programming language, while the OI code is written in MATLAB. So, what I do is to first read the Seaglider data into Python using BuoyancyGliderUtils developed by Luke Gregor ( github.com/luke-gregor/BuoyancyGliderUtils ). 
 
-```
+```python
 %pylab inline
 from netCDF4 import Dataset
 import pandas as pd
