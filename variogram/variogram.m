@@ -21,16 +21,16 @@ function S = variogram(x,y,varargin)
 %   maxdist - maximum distance for variogram calculation
 %            (default = maximum distance in the dataset / 2)
 %   type -   'gamma' returns the variogram value (default)
-%            'binnedcloud' returns the binned variogram cloud
-%            'cloud' returns the variogram cloud
-%   plot   - true -> plot variogram
+%            'cloud1' returns the binned variogram cloud
+%            'cloud2' returns the variogram cloud
+%   plotit - true -> plot variogram
 %            false -> don't plot (default)
 %   subsample - number of randomly drawn points if large datasets are used.
 %               scalar (positive integer, e.g. 3000)
 %               inf (default) = no subsampling
 %   anisotropy - false (default), true (works only in two dimensions)
 %   thetastep - if anisotropy is set to true, specifying thetastep 
-%            allows you the angle width (default 30Â°)
+%            allows you the angle width (default 30°)
 %   
 %   
 % Output:
@@ -51,88 +51,86 @@ function S = variogram(x,y,varargin)
 %     ylabel('frequency'); xlabel('z')
 %     title('histogram of z-values')
 %     subplot(2,2,3)
-%     d = variogram([x y],z,'plot',true,'nrbins',50);
+%     d = variogram([x y],z,'plotit',true,'nrbins',50);
 %     title('Isotropic variogram')
 %     subplot(2,2,4)
-%     d2 = variogram([x y],z,'plot',true,'nrbins',50,'anisotropy',true);
+%     d2 = variogram([x y],z,'plotit',true,'nrbins',50,'anisotropy',true);
 %     title('Anisotropic variogram')
 %
+% Requirements:
+%   The function uses parseargs (objectId=10670) 
+%   by Malcolm wood as subfunction.
 %
 % See also: KRIGING, VARIOGRAMFIT
 %
-% Date: 17. April, 2018
-% Author: Wolfgang Schwanghart (w.schwanghart[at]geo.uni-potsdam.de)
+% Date: 9. January, 2013
+% Author: Wolfgang Schwanghart
 
 
-% extent of dataset
-minx   = min(x,[],1);
-maxx   = max(x,[],1);
-maxd   = sqrt(sum((maxx-minx).^2));
-nrdims = size(x,2);
-
-% Parse inputs
-p = inputParser;
-p.FunctionName = 'variogram';
-
-addRequired(p,'x',@(x) validateattributes(x,{'numeric'},{}));
-addRequired(p,'y',@(y) validateattributes(y,{'numeric'},{'column','nrows',size(x,1)}));
-
-addParamValue(p,'nrbins',20,@(x) validateattributes(x,{'numeric'},{'scalar','integer','>',0}));
-addParamValue(p,'maxdist',maxd/2,@(x) validateattributes(x,{'numeric'},{'scalar','>',0}));
-addParamValue(p,'type','gamma',@(x) ischar(validatestring(x,{'gamma','binnedcloud1','cloud'})));
-addParamValue(p,'plot',true,@(x) isscalar(x));
-addParamValue(p,'subsample',inf,@(x) validateattributes(x,{'numeric'},{'scalar','integer','>',0}));
-addParamValue(p,'anisotropy',false,@(x) isscalar(x));
-addParamValue(p,'thetastep',30,@(x) validateattributes(x,{'numeric'},{'scalar','>',0}));
-
-parse(p,x,y,varargin{:});
-
-% convert inputParser class to struct to allow values to be modified
-% further
-p = p.Results;
+% error checking
+if size(y,1) ~= size(x,1);
+    error('x and y must have the same number of rows')
+end
 
 % check for nans
-II      = any(isnan(x),2) | isnan(y);
+II = any(isnan(x),2) | isnan(y);
 x(II,:) = [];
 y(II)   = [];
 
-% check maximum distance
-if p.maxdist > maxd;
+% extent of dataset
+minx = min(x,[],1);
+maxx = max(x,[],1);
+maxd = sqrt(sum((maxx-minx).^2));
+nrdims = size(x,2);
+
+% check input using PARSEARGS
+params.nrbins      = 20;
+params.maxdist     = maxd/2;
+params.type        = {'default','gamma','cloud1','cloud2'};
+params.plotit      = false;
+params.anisotropy  = false;
+params.thetastep   = 30;
+params.subsample   = inf;
+params = parseargs(params,varargin{:});
+
+if params.maxdist > maxd;
     warning('Matlab:Variogram',...
             ['Maximum distance exceeds maximum distance \n' ... 
              'in the dataset. maxdist was decreased to ' num2str(maxd) ]);
-    p.maxdist  = maxd;
+    params.maxdist  = maxd;
 end
 
-% anisotropy
-if p.anisotropy && nrdims ~= 2 
-    p.anisotropy = false;
+if params.anisotropy && nrdims ~= 2 
+    params.anisotropy = false;
     warning('Matlab:Variogram',...
             'Anistropy is only supported for 2D data');
 end
 
 % take only a subset of the data;
-if ~isinf(p.subsample) && numel(y)>p.subsample;
-    IX = randperm(numel(y),p.subsample);
+if ~isinf(params.subsample) && numel(y)>params.subsample;
+    IX = randperm(numel(y),params.subsample);
     x  = x(IX,:);
     y  = y(IX,:);
 end
 
 % calculate bin tolerance
-tol = p.maxdist/p.nrbins;
+tol = params.maxdist/params.nrbins;
 
 % calculate distance matrix
-iid = distmat(x,p.maxdist);
+iid = distmat(x,params.maxdist);
 
 % calculate squared difference between values of coordinate pairs
 lam      = (y(iid(:,1))-y(iid(:,2))).^2;
 
+%
+params.thetastep = params.thetastep;
+
 % anisotropy
-if p.anisotropy 
-    nrthetaedges = floor(180/(p.thetastep))+1;
+if params.anisotropy 
+    nrthetaedges = floor(180/(params.thetastep))+1;
   
     % calculate with radians, not degrees
-    p.thetastep = p.thetastep/180*pi;
+    params.thetastep = params.thetastep/180*pi;
 
     % calculate angles, note that angle is calculated clockwise from top
     theta    = atan2(x(iid(:,2),1)-x(iid(:,1),1),...
@@ -141,34 +139,34 @@ if p.anisotropy
     % only the semicircle is necessary for the directions
     I        = theta < 0;
     theta(I) = theta(I)+pi;
-    I        = theta >= pi-p.thetastep/2;
+    I        = theta >= pi-params.thetastep/2;
     theta(I) = 0;
         
     % create a vector with edges for binning of theta
     % directions go from 0 to 180 degrees;
-    thetaedges = linspace(-p.thetastep/2,pi-p.thetastep/2,nrthetaedges);
+    thetaedges = linspace(-params.thetastep/2,pi-params.thetastep/2,nrthetaedges);
     
     % bin theta
     [ntheta,ixtheta] = histc(theta,thetaedges);
     
     % bin centers
-    thetacents = thetaedges(1:end)+p.thetastep/2;
+    thetacents = thetaedges(1:end)+params.thetastep/2;
     thetacents(end) = pi; %[];
 end
 
 % calculate variogram
-switch p.type
-    case 'gamma'
+switch params.type
+    case {'default','gamma'}
         % variogram anonymous function
-        fvar     = @(x) 1./2 * mean(x);
+        fvar     = @(x) 1./(2*numel(x)) * sum(x);
         
         % distance bins
-        edges      = linspace(0,p.maxdist,p.nrbins+1);
+        edges      = linspace(0,params.maxdist,params.nrbins+1);
         edges(end) = inf;
 
         [nedge,ixedge] = histc(iid(:,3),edges);
         
-        if p.anisotropy
+        if params.anisotropy
             S.val      = accumarray([ixedge ixtheta],lam,...
                                  [numel(edges) numel(thetaedges)],fvar,nan);
             S.val(:,end)=S.val(:,1); 
@@ -184,8 +182,8 @@ switch p.type
         S.val(end,:) = [];
         S.num(end,:) = [];
 
-    case 'binnedcloud'
-        edges      = linspace(0,p.maxdist,p.nrbins+1);
+    case 'cloud1'
+        edges      = linspace(0,params.maxdist,params.nrbins+1);
         edges(end) = inf;
         
         [nedge,ixedge] = histc(iid(:,3),edges);
@@ -193,30 +191,30 @@ switch p.type
         S.distance = edges(ixedge) + tol/2;
         S.distance = S.distance(:);
         S.val      = lam;  
-        if p.anisotropy            
+        if params.anisotropy            
             S.theta   = thetacents(ixtheta);
         end
-    case 'cloud'
+    case 'cloud2'
         S.distance = iid(:,3);
         S.val      = lam;
-        if p.anisotropy            
+        if params.anisotropy            
             S.theta   = thetacents(ixtheta);
         end
 end
 
 
 % create plot if desired
-if p.plot
-    switch p.type
+if params.plotit
+    switch params.type
         case {'default','gamma'}
             marker = 'o--';
         otherwise
             marker = '.';
     end
     
-    if ~p.anisotropy
+    if ~params.anisotropy
         plot(S.distance,S.val,marker);
-        axis([0 p.maxdist 0 max(S.val)*1.1]);
+        axis([0 params.maxdist 0 max(S.val)*1.1]);
         xlabel('h');
         ylabel('\gamma (h)');
         title('(Semi-)Variogram');
@@ -300,5 +298,110 @@ function iid = distmatsub(i)
     iid = [j(I) d(I)];
 end
 end
+
+
+
+% subfunction parseargs
+
+function X = parseargs(X,varargin)
+
+%PARSEARGS - Parses name-value pairs
+%
+% Behaves like setfield, but accepts multiple name-value pairs and provides
+% some additional features:
+% 1) If any field of X is an cell-array of strings, it can only be set to
+%    one of those strings.  If no value is specified for that field, the
+%    first string is selected.
+% 2) Where the field is not empty, its data type cannot be changed
+% 3) Where the field contains a scalar, its size cannot be changed.
+%
+% X = parseargs(X,name1,value1,name2,value2,...) 
+%
+% Intended for use as an argument parser for functions which multiple options.
+% Example usage:
+%
+% function my_function(varargin)
+%   X.StartValue = 0;
+%   X.StopOnError = false;
+%   X.SolverType = {'fixedstep','variablestep'};
+%   X.OutputFile = 'out.txt';
+%   X = parseargs(X,varargin{:});
+%
+% Then call (e.g.):
+%
+% my_function('OutputFile','out2.txt','SolverType','variablestep');
+
+% The various #ok comments below are to stop MLint complaining about
+% inefficient usage.  In all cases, the inefficient usage (of error, getfield, 
+% setfield and find) is used to ensure compatibility with earlier versions
+% of MATLAB.
+
+remaining = nargin-1; % number of arguments other than X
+count = 1;
+fields = fieldnames(X);
+modified = zeros(size(fields));
+% Take input arguments two at a time until we run out.
+while remaining>=2
+    fieldname = varargin{count};
+    fieldind = find(strcmp(fieldname,fields));
+    if ~isempty(fieldind)
+        oldvalue = getfield(X,fieldname); %#ok
+        newvalue = varargin{count+1};
+        if iscell(oldvalue)
+            % Cell arrays must contain strings, and the new value must be
+            % a string which appears in the list.
+            if ~iscellstr(oldvalue)
+                error(sprintf('All allowed values for "%s" must be strings',fieldname));  %#ok
+            end
+            if ~ischar(newvalue)
+                error(sprintf('New value for "%s" must be a string',fieldname));  %#ok
+            end
+            if isempty(find(strcmp(oldvalue,newvalue))) %#ok
+                error(sprintf('"%s" is not allowed for field "%s"',newvalue,fieldname));  %#ok
+            end
+        elseif ~isempty(oldvalue)
+            % The caller isn't allowed to change the data type of a non-empty property,
+            % and scalars must remain as scalars.
+            if ~strcmp(class(oldvalue),class(newvalue))
+                error(sprintf('Cannot change class of field "%s" from "%s" to "%s"',...
+                    fieldname,class(oldvalue),class(newvalue))); %#ok
+            elseif numel(oldvalue)==1 & numel(newvalue)~=1 %#ok
+                error(sprintf('New value for "%s" must be a scalar',fieldname));  %#ok
+            end
+        end
+        X = setfield(X,fieldname,newvalue); %#ok
+        modified(fieldind) = 1;
+    else
+        error(['Not a valid field name: ' fieldname]);
+    end
+    remaining = remaining - 2;
+    count = count + 2;
+end
+% Check that we had a value for every name.
+if remaining~=0
+    error('Odd number of arguments supplied.  Name-value pairs required');
+end
+
+% Now find cell arrays which were not modified by the above process, and select
+% the first string.
+notmodified = find(~modified);
+for i=1:length(notmodified)
+    fieldname = fields{notmodified(i)};
+    oldvalue = getfield(X,fieldname); %#ok
+    if iscell(oldvalue)
+        if ~iscellstr(oldvalue)
+            error(sprintf('All allowed values for "%s" must be strings',fieldname)); %#ok
+        elseif isempty(oldvalue)
+            error(sprintf('Empty cell array not allowed for field "%s"',fieldname)); %#ok
+        end
+        X = setfield(X,fieldname,oldvalue{1}); %#ok
+    end
+end
+end
+
+
+
+
+
 
 
