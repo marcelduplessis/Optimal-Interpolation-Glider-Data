@@ -48,9 +48,13 @@ time = time(ind);
 depth = depth(ind);
 ```
 
-I perform the objective mapping as follows, first define a uniform grid. Here I use a constant grid of 0.1 days in the horizontal and 10 m in the vertical. Important parameters here are LX, LY and E. 
+The semi-variogram for time (LX) and depth (LY) are calculated using the experimental variogra software ( https://se.mathworks.com/matlabcentral/fileexchange/20355-experimental-semi-variogram ). 
 
-As per discussion with Isabelle Giddy, there appeared to be no correlation length scale for LX (horizontal grid) and as such a value of 1 was chosen. A value of 250 was eye-balled to be where the variogram levelled out and so the lengthscale 250 was chosen for LY. A valu
+There appeared to be no correlation length scale for LX (horizontal grid) and as such a value of 1 was chosen. A value of 250 was eye-balled to be where the variogram levelled out and so the lengthscale 250 was chosen for LY. I allow the interpolation to have a relative error of 0.025. I perform sensativity tests to show this to be a fine estimate.
+
+![Semi-variogram](https://github.com/marcelduplessis/Optimal-Interpolation-Glider-Data/blob/master/semi_variogram_LX_LY.png)
+
+I perform the objective mapping as follows, first define a uniform grid. Here I use a constant grid of 0.1 days in the horizontal and 10 m in the vertical. Important parameters here are LX, LY and E and are chosen as above. 
 
 ```matlab
 
@@ -66,5 +70,3 @@ E=0.025; %nugget of depth variogram
 [ZI,EM]=objmap(time,depth,temp,TI,DI,[LX,LY],E);
 
 ```
-
-![Temp distrubution](https://github.com/marcelduplessis/Optimal-Interpolation-Glider-Data/blob/master/temp_distribution.png)
