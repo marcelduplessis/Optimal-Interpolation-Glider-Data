@@ -48,17 +48,13 @@ time = time(ind);
 depth = depth(ind);
 ```
 
-I perform the objective mapping as follows:
+I perform the objective mapping as follows, first define a uniform grid. Here I use a constant grid of 0.1 days in the horizontal and 10 m in the vertical. Important parameters here are LX, LY and E. 
 
 ```matlab
 
 %define uniform grid (0.1 days,10 m)
 TI=(time(1):0.085:time(end))';
 DI=linspace(0,1000,100);
-
-%produce variogram to determine length scales of auto-correlation and error
-% vx=variogram(timex,temp,'subsample',3000,'plotit',true);
-% vy=variogram(depth,temp,'subsample',3000,'plotit',true);
 
 %define length scales for temperature
 LX=1; %no correlation, so choose 1 
