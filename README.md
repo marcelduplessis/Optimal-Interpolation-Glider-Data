@@ -25,5 +25,5 @@ d = {'temp' : dat.temperature.data.temperature.values,
     'depth' : dat.temperature.data.ctd_depth.values,
     'time'  : t}
 
-sio.savemat('/Users/Marcel/Downloads/test_file.mat', d)
+sio.savemat('/Users/Marcel/Google Drive/Data/SOCCO_gliders/optimal_interpolated_grids/soscex1_temp.mat', d)
 ```
