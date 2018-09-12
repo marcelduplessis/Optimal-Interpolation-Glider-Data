@@ -28,13 +28,43 @@ sio.savemat('/Users/Marcel/Google Drive/Data/SOCCO_gliders/optimal_interpolated_
 ```
 
 ## Reading the data into MATLAB and performing the optimal interpolation
----
 
 Now once the data is saved in a .mat format, I switch from Python to MATLAB (long-winded I know, but it works for me so I'm going with it). Once in MATLAB, you need to add the paths for the objmap and variogram and load in the saved .mat file.
 
-```matlab
-addpath(genpath('/Users/Marcel/Google Drive/Data/SOCCO_gliders/Optimal-Interpolation/datafun'));
-addpath(genpath('/Users/Marcel/Google Drive/Data/SOCCO_gliders/Optimal-Interpolation/variogram'));
+```Matlab 
+addpath(genpath('/Users/Marcel/Downloads/datafun'));
+addpath(genpath('/Users/Marcel/Downloads/variogram'));
 
-load('/Users/Marcel/Google Drive/Data/SOCCO_gliders/optimal_interpolated_grids/soscex1_temp.mat');
+load('/Users/Marcel/Google Drive/Data/SOCCO_gliders/optimal_interpolated_grids/test_file.mat');
+```
+
+You need to remove any nans that may exists in the dataset:
+
+```matlab
+ind = ~isnan(temp);
+
+temp = temp(ind);
+time = time(ind);
+depth = depth(ind);
+```
+
+I perform the objective mapping as follows:
+
+```matlab
+
+%define uniform grid (0.1 days,10 m)
+TI=(time(1):0.085:time(end))';
+DI=linspace(0,1000,100);
+
+%produce variogram to determine length scales of auto-correlation and error
+% vx=variogram(timex,temp,'subsample',3000,'plotit',true);
+% vy=variogram(depth,temp,'subsample',3000,'plotit',true);
+
+%define length scales for temperature
+LX=1; %no correlation, so choose 1 
+LY=250; %distance, this was eye-balled, use distance value where the variogram levels out
+E=0.025; %nugget of depth variogram
+
+[ZI,EM]=objmap(time,depth,temp,TI,DI,[LX,LY],E);
+
 ```
